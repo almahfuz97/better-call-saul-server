@@ -1,7 +1,7 @@
 // dependencies
 const express = require('express');
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 require('dotenv').config();
 
@@ -17,7 +17,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     const servicesCollection = client.db('better-call-saul').collection('services');
 
-    // return only 3 services
+    // send only 3 services
     app.get('/home', async (req, res) => {
         // sort descendingly
         const option = {
@@ -29,6 +29,39 @@ async function run() {
         const services = await cursor.limit(3).toArray();
         console.log(services)
         res.send(services);
+    })
+
+    // send all services 
+    app.get('/services', async (req, res) => {
+        // sort descendingly
+        const option = {
+            sort: {
+                "createdAt": -1
+            }
+        }
+        const cursor = servicesCollection.find({}, option);
+        const services = await cursor.toArray();
+        console.log(services)
+        res.send(services);
+    })
+    // send 1 service 
+    const reviewCollection = client.db('better-call-saul').collection('reviews');
+    app.get('/service/:id', async (req, res) => {
+        const serviceId = req.params.id;
+        const query = { _id: ObjectId(serviceId) };
+        const service = await servicesCollection.findOne(query);
+
+        // find all comments
+        const option = {
+            sort:
+            {
+                "createdAt": -1
+            }
+        }
+        const cursor = reviewCollection.find({}, option)
+        const reviews = await cursor.toArray();
+        console.log(service)
+        res.send({ service, reviews });
     })
 
 }
