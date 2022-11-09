@@ -47,13 +47,15 @@ async function run() {
 
     // send 1 service 
     const reviewCollection = client.db('better-call-saul').collection('reviews');
+
     app.get('/service/:id', async (req, res) => {
         const serviceId = req.params.id;
+        console.log(serviceId);
         const query = { _id: ObjectId(serviceId) };
         const service = await servicesCollection.findOne(query);
 
         // find all reviews of that service
-        const reviewQuery = { serviceId }
+        const reviewQuery = { serviceId: serviceId }
         const option = {
             sort:
             {
@@ -62,14 +64,14 @@ async function run() {
         }
         const cursor = reviewCollection.find(reviewQuery, option)
         const reviews = await cursor.toArray();
-        console.log(service)
+        console.log(reviews)
         res.send({ service, reviews });
     })
 
     // post reviews
     app.post('/review/service/:id', async (req, res) => {
         const reviewData = req.body;
-        console.log(reviewData)
+        console.log(reviewData);
         const result = await reviewCollection.insertOne(reviewData);
 
         // find all revie of that service to send again to client
@@ -84,6 +86,7 @@ async function run() {
         }
         const cursor = reviewCollection.find(query, option)
         const reviews = await cursor.toArray();
+        console.log('here rev', reviews)
         res.send({ result, reviews });
     })
 }
