@@ -65,8 +65,10 @@ async function run() {
         }
         const cursor = reviewCollection.find(reviewQuery, option)
         const reviews = await cursor.toArray();
+        const totalReviews = reviews.length;
+
         console.log(reviews)
-        res.send({ service, reviews });
+        res.send({ service, reviews, totalReviews });
     })
 
     // post reviews
