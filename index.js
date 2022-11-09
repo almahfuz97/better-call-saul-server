@@ -44,6 +44,7 @@ async function run() {
         console.log(services)
         res.send(services);
     })
+
     // send 1 service 
     const reviewCollection = client.db('better-call-saul').collection('reviews');
     app.get('/service/:id', async (req, res) => {
@@ -51,19 +52,40 @@ async function run() {
         const query = { _id: ObjectId(serviceId) };
         const service = await servicesCollection.findOne(query);
 
-        // find all comments
+        // find all reviews of that service
+        const reviewQuery = { serviceId }
         const option = {
             sort:
             {
                 "createdAt": -1
             }
         }
-        const cursor = reviewCollection.find({}, option)
+        const cursor = reviewCollection.find(reviewQuery, option)
         const reviews = await cursor.toArray();
         console.log(service)
         res.send({ service, reviews });
     })
 
+    // post reviews
+    app.post('/review/service/:id', async (req, res) => {
+        const reviewData = req.body;
+        console.log(reviewData)
+        const result = await reviewCollection.insertOne(reviewData);
+
+        // find all revie of that service to send again to client
+        // service review
+        const serviceId = req.params.id;
+        const query = { serviceId }
+        const option = {
+            sort:
+            {
+                "createdAt": -1
+            }
+        }
+        const cursor = reviewCollection.find(query, option)
+        const reviews = await cursor.toArray();
+        res.send({ result, reviews });
+    })
 }
 run().catch(console.dir)
 
