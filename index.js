@@ -2,7 +2,8 @@
 const express = require('express');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const cors = require('cors')
+const cors = require('cors');
+const { query } = require('express');
 require('dotenv').config();
 
 // middle ware
@@ -88,6 +89,20 @@ async function run() {
         const reviews = await cursor.toArray();
         console.log('here rev', reviews)
         res.send({ result, reviews });
+    })
+
+    // my reviews
+    app.get('/myreviews', async (req, res) => {
+        const email = req.query.email;
+        const query = { email }
+        const option = {
+            sort: {
+                "createdAt": -1
+            }
+        }
+        const cursor = reviewCollection.find(query, option);
+        const myreviews = await cursor.toArray();
+        res.send(myreviews);
     })
 }
 run().catch(console.dir)
