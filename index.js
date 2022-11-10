@@ -4,6 +4,7 @@ const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const { query } = require('express');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const port = process.env.PORT || 5000;
@@ -16,9 +17,32 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_SECRET}@clust
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+// json web token
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: "unauthorized access" });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(401).send({ message: "unauthorized access" });
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
+
 async function run() {
     const servicesCollection = client.db('better-call-saul').collection('services');
 
+    // JWT
+    app.post('/jwt', (req, res) => {
+        const user = req.body;
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+        res.send({ token });
+    })
     // add service
     app.post('/addservice', async (req, res) => {
         const body = req.body;
@@ -103,7 +127,12 @@ async function run() {
     })
 
     // my reviews
-    app.get('/myreviews', async (req, res) => {
+    app.get('/myreviews', verifyJWT, async (req, res) => {
+
+        const decoded = req.decoded;
+        if (decoded.email !== req.query.email) {
+            res.status(403).send({ message: 'forbidden access' })
+        }
         const email = req.query.email;
         const query = { email }
         const option = {
@@ -173,6 +202,16 @@ async function run() {
         const cursor = blogCollection.find({}, option);
         const blogs = await cursor.toArray();
         res.send(blogs)
+    })
+
+    const testimonialsCollection = client.db('better-call-saul').collection('testimonialsCollection');
+
+    // get all testimony
+    app.get('/testimonials', async (req, res) => {
+
+        const cursor = testimonialsCollection.find({});
+        const tes = await cursor.toArray();
+        res.send(tes)
     })
 }
 run().catch(console.dir)
