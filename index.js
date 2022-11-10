@@ -89,7 +89,7 @@ async function run() {
         }
         const cursor = reviewCollection.find(query, option)
         const reviews = await cursor.toArray();
-        console.log('here rev', reviews)
+        console.log('here rev', reviews, result)
         res.send({ result, reviews });
     })
 
@@ -105,6 +105,26 @@ async function run() {
         const cursor = reviewCollection.find(query, option);
         const myreviews = await cursor.toArray();
         res.send(myreviews);
+    })
+
+    // delete a review
+    app.delete('/delete/:id', async (req, res) => {
+        const reviewId = req.params.id;
+        const query = { _id: ObjectId(reviewId) };
+        // delete
+        const result = await reviewCollection.deleteOne(query);
+
+        // find all new reviews
+        const option = {
+            sort: {
+                "createdAt": -1
+            }
+        }
+        const email = req.query.email;
+        const cursor = reviewCollection.find({ email }, option)
+        const reviews = await cursor.toArray();
+
+        res.send({ result, reviews });
     })
 }
 run().catch(console.dir)
