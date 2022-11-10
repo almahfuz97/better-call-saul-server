@@ -18,6 +18,14 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     const servicesCollection = client.db('better-call-saul').collection('services');
 
+    // add service
+    app.post('/addservice', async (req, res) => {
+        const body = req.body;
+        console.log(body);
+        const result = await servicesCollection.insertOne(body);
+        console.log(result)
+        res.send(result);
+    })
     // send only 3 services
     app.get('/home', async (req, res) => {
         // sort descendingly
@@ -46,9 +54,9 @@ async function run() {
         res.send(services);
     })
 
+
     // send 1 service 
     const reviewCollection = client.db('better-call-saul').collection('reviews');
-
     app.get('/service/:id', async (req, res) => {
         const serviceId = req.params.id;
         console.log(serviceId);
@@ -77,7 +85,7 @@ async function run() {
         console.log(reviewData);
         const result = await reviewCollection.insertOne(reviewData);
 
-        // find all revie of that service to send again to client
+        // find all review of that service to send again to client
         // service review
         const serviceId = req.params.id;
         const query = { serviceId }
@@ -139,7 +147,8 @@ async function run() {
             }
         }
         const result = await reviewCollection.updateOne(filter, updatedDoc);
-        res.send({ result })
+        const review = await reviewCollection.findOne(filter);
+        res.send({ result, review })
     })
 }
 run().catch(console.dir)
