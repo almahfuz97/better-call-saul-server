@@ -6,12 +6,13 @@ const cors = require('cors');
 const { query } = require('express');
 require('dotenv').config();
 
+const port = process.env.PORT || 5000;
 // middle ware
 app.use(cors());
 app.use(express.json());
 
 
-const uri = process.env.MONGO_URI;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_SECRET}@cluster0.4ilyo9k.mongodb.net/?retryWrites=true&w=majority`
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -150,10 +151,33 @@ async function run() {
         const review = await reviewCollection.findOne(filter);
         res.send({ result, review })
     })
+
+    // add blog
+    const blogCollection = client.db('better-call-saul').collection('blogs');
+
+    app.post('/addblog', async (req, res) => {
+        const body = req.body;
+        console.log(body);
+        const result = await blogCollection.insertOne(body);
+        console.log(result)
+        res.send(result);
+    })
+
+    // get all blogs
+    app.get('/blogs', async (req, res) => {
+        const option = {
+            sort: {
+                "createdAt": -1
+            }
+        }
+        const cursor = blogCollection.find({}, option);
+        const blogs = await cursor.toArray();
+        res.send(blogs)
+    })
 }
 run().catch(console.dir)
 
 
-app.listen(process.env.PORT, () => {
-    console.log('Server running on', process.env.PORT)
+app.listen(port, () => {
+    console.log('Server running on', port)
 })
